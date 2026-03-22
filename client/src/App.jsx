@@ -1,16 +1,25 @@
-import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/common/Navbar';
+import Home from './pages/Home';
+import LiveScores from './pages/LiveScores';
+import MatchDetail from './pages/MatchDetail';
+import News from './pages/News';
+import AIAssistant from './pages/AIAssistant';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold text-green-700 text-center py-10">
-        🏏 Cricbuzz Clone
-      </h1>
-      <p className="text-center text-gray-600">
-        If this text is styled, Tailwind is working! ✅
-      </p>
-    </div>
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-100">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/live" element={<LiveScores />} />
+          <Route path="/match/:id" element={<MatchDetail />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/ai" element={<AIAssistant />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
-
 export default App;
