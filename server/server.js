@@ -24,8 +24,10 @@ const connectDB = require("./config/db.js");
 connectDB();
 
 const authRoutes = require('./routes/authRoutes');
+const cricketRoutes = require('./routes/cricketRoutes');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/cricket',cricketRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
