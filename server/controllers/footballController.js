@@ -1,5 +1,5 @@
 const footballApi = require('../services/footballApiService');
-const { getOrSet } = require('../services/cacheService');
+const { getOrSet } = require('../services/cacheServices');
 
 exports.getLiveMatches = async (req, res) => {
     try {
