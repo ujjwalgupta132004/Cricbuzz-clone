@@ -1,53 +1,46 @@
 const axios = require('axios');
 
 const API_KEY = process.env.FOOTBALL_API_KEY;
-const BASE_URL = process.env.FOOTBALL_API_BASE_URL;
 
 const apiRequest = async (endpoint, params = {}) => {
     try {
-        const response = await axios.get(`${BASE_URL}/${endpoint}`, {
+        const response = await axios.get(`https://sportscore1.p.rapidapi.com${endpoint}`, {
             headers: {
-                'x-apisports-key': API_KEY,  
+                'x-rapidapi-host': 'sportscore1.p.rapidapi.com',
+                'x-rapidapi-key': API_KEY
             },
             params  
         });
 
-        if (response.data.errors && Object.keys(response.data.errors).length > 0) {
-            throw new Error(JSON.stringify(response.data.errors));
-        }
-
-        return response.data.response; 
+        return response.data.data; 
     } catch (error) {
-        console.error(` Football API Error [${endpoint}]:`, error.message);
+        console.error(` SportScore API Error [${endpoint}]:`, error.message);
         throw error;
     }
 };
 
-
 const getLiveMatches = async () => {
-    return await apiRequest('fixtures', { live: 'all' });
+    return await apiRequest('/sports/1/events/live');
 };
 
 const getMatchesByDate = async (date) => {
-    return await apiRequest('fixtures', { date });
+    return await apiRequest(`/sports/1/events/date/${date}`); 
 };
+
 const getMatchDetails = async (fixtureId) => {
-    return await apiRequest('fixtures', { id: fixtureId });
+    return await apiRequest(`/events/${fixtureId}`);
 };
 
 const getStandings = async (leagueId, season) => {
-    return await apiRequest('standings', { league: leagueId, season });
-};
-const getPlayerStats = async (playerId, season) => {
-    return await apiRequest('players', { id: playerId, season });
+    return []; // Placeholder, find specific SportScore tournament standings endpoint later if needed
 };
 
 const searchPlayers = async (name) => {
-    return await apiRequest('players', { search: name });
+    return []; // Placeholder
 };
-const getTopScorers = async (leagueId, season) => {
-    return await apiRequest('players/topscorers', { league: leagueId, season });
-};
+
+const getPlayerStats = async (playerId, season) => { return []; };
+const getTopScorers = async (leagueId, season) => { return []; };
 
 module.exports = {
     getLiveMatches,

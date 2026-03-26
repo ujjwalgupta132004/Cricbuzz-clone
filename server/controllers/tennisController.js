@@ -5,17 +5,17 @@ exports.getLiveMatches = async (req, res) => {
     try {
         const matches = await getOrSet('tennis_live', tennisApi.getLiveMatches, 30);
 
-        const normalized = matches.map(m => ({
-            id: m.event_id,
+        const normalized = (matches || []).map(m => ({
+            id: m.id,
             sport: 'tennis',
-            name: `${m.home_team} vs ${m.away_team}`,
-            status: m.status,
-            isLive: m.status === 'Live',
-            isFinished: m.status === 'Finished',
-            score: m.score,
-            round: m.round,
-            tournament: m.tournament?.name || 'Unknown',
-            date: m.date
+            name: `${m.home_team?.name} vs ${m.away_team?.name}`,
+            status: m.status_more || m.status,
+            isLive: m.status === 'inprogress',
+            isFinished: m.status === 'finished',
+            score: m.home_score && m.away_score ? `${m.home_score.display} - ${m.away_score.display}` : 'v',
+            round: m.round_info?.round || m.round_number || '',
+            tournament: m.league?.name || 'Unknown',
+            date: m.start_at
         }));
 
         const live = normalized.filter(m => m.isLive);
