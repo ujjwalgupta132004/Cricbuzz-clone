@@ -3,7 +3,7 @@ import { createContext, useContext, useState } from 'react';
 const SportContext = createContext();
 
 export const SportProvider = ({ children }) => {
-    const [activeSport, setActiveSport] = useState('cricket'); 
+    const [activeSport, setActiveSport] = useState('cricket');
 
     const sports = [
         { key: 'cricket', label: '🏏 Cricket', color: 'green' },

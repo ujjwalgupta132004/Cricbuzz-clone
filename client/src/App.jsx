@@ -6,6 +6,7 @@ import MatchDetail from './pages/MatchDetail';
 import News from './pages/News';
 import AIAssistant from './pages/AIAssistant';
 import { SportProvider } from './context/SportsContext';
+import PlayerProfile from './pages/PlayerProfile';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/match/:id" element={<MatchDetail />} />
             <Route path="/news" element={<News />} />
             <Route path="/ai" element={<AIAssistant />} />
+            <Route path="/player/:sport/:id" element={<PlayerProfile />} />
           </Routes>
         </div>
       </BrowserRouter>
