@@ -28,6 +28,7 @@ const cricketRoutes = require('./routes/cricketRoutes');
 const footballRoutes = require('./routes/footballRoutes');
 const tennisRoutes=require('./routes/tennisRoutes');
 const playerRoutes = require('./routes/playerRoutes');
+const predictionRoutes = require('./routes/predictionRoutes');
 
 
 
@@ -37,6 +38,7 @@ app.use('/api/cricket', cricketRoutes);
 app.use('/api/football', footballRoutes);
 app.use('/api/tennis', tennisRoutes);
 app.use('/api/players', playerRoutes);
+app.use('/api/predictions', predictionRoutes);
 
 
 app.listen(PORT, () => {
