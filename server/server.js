@@ -27,14 +27,11 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-
-const httpServer = http.createServer(app);
-const io = initSocket(httpServer);
-
-
 const connectDB = require("./config/db.js");
-
 connectDB();
+
+const startScoreFetcher = require('./jobs/scoreFetfcher');
+
 
 const authRoutes = require('./routes/authRoutes');
 const cricketRoutes = require('./routes/cricketRoutes');
@@ -56,4 +53,5 @@ app.use('/api/predictions', predictionRoutes);
 
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    startScoreFetcher();
 });
