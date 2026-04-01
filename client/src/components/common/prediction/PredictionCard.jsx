@@ -1,6 +1,5 @@
-// client/src/components/prediction/PredictionCard.jsx
 import { useState } from 'react';
-import api from '../../services/api';
+import api from '../../../services/api';
 
 const PredictionCard = ({ sport, matchId, matchName }) => {
     const [prediction, setPrediction] = useState(null);
@@ -19,59 +18,51 @@ const PredictionCard = ({ sport, matchId, matchName }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="font-bold text-lg mb-3">🤖 AI Prediction</h3>
-            <p className="text-gray-500 text-sm mb-4">{matchName}</p>
+        <div className="card">
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>🤖 AI Match Prediction</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{matchName}</p>
 
             {!prediction ? (
-                <button
-                    onClick={fetchPrediction}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full
-                     hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
-                >
-                    {loading ? '🔮 Analyzing...' : '✨ Get AI Prediction'}
+                <button onClick={fetchPrediction} disabled={loading} className="btn btn-primary">
+                    {loading ? '🔮 Analyzing match data...' : '✨ Get AI Prediction'}
                 </button>
             ) : (
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Win probability bar */}
                     <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span>{prediction.team1?.name}</span>
-                            <span>{prediction.team2?.name}</span>
+                        <div className="flex items-center justify-between" style={{ fontSize: 13, marginBottom: 6 }}>
+                            <span style={{ fontWeight: 600 }}>{prediction.team1?.name}</span>
+                            <span style={{ fontWeight: 600 }}>{prediction.team2?.name}</span>
                         </div>
-                        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
-                            <div
-                                className="bg-green-500 h-full transition-all duration-1000"
-                                style={{ width: `${prediction.team1?.winProbability}%` }}
-                            />
-                            <div
-                                className="bg-blue-500 h-full transition-all duration-1000"
-                                style={{ width: `${prediction.team2?.winProbability}%` }}
-                            />
+                        <div className="prediction-bar">
+                            <div className="bar-fill-green" style={{ width: `${prediction.team1?.winProbability}%` }} />
+                            <div className="bar-fill-blue" style={{ width: `${prediction.team2?.winProbability}%` }} />
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <div className="flex items-center justify-between" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                             <span>{prediction.team1?.winProbability}%</span>
                             <span>{prediction.team2?.winProbability}%</span>
                         </div>
                     </div>
 
-                    
-                    <div>
-                        <h4 className="font-semibold text-sm mb-2">Key Factors:</h4>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                            {prediction.keyFactors?.map((f, i) => (
-                                <li key={i}>• {f}</li>
-                            ))}
-                        </ul>
+                    {/* Key Factors */}
+                    {prediction.keyFactors?.length > 0 && (
+                        <div>
+                            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--text-secondary)' }}>Key Factors</h4>
+                            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {prediction.keyFactors.map((f, i) => (
+                                    <li key={i} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>• {f}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Prediction text */}
+                    <div className="card" style={{ background: 'var(--bg-secondary)' }}>
+                        <p style={{ fontSize: 13, lineHeight: 1.6 }}>{prediction.prediction}</p>
                     </div>
 
-                   
-                    <p className="text-sm bg-gray-50 p-3 rounded-lg">{prediction.prediction}</p>
-
-                    <span className={`text-xs px-2 py-1 rounded-full ${prediction.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                            prediction.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
-                        }`}>
+                    {/* Confidence */}
+                    <span className={`confidence-badge confidence-${prediction.confidence}`}>
                         Confidence: {prediction.confidence}
                     </span>
                 </div>
@@ -79,4 +70,5 @@ const PredictionCard = ({ sport, matchId, matchName }) => {
         </div>
     );
 };
+
 export default PredictionCard;

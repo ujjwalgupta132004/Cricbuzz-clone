@@ -1,62 +1,241 @@
-// client/src/pages/Home.jsx — Updated for multi-sport
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getCricketMatches, getFootballMatches, getTennisMatches } from '../services/api';
-import { useSport } from '../context/SportsContext';
-import SportSelector from '../components/common/SportSelector';
+import api from '../services/api';
+import { FaChevronRight } from 'react-icons/fa';
 
-
-const API_MAP = {
-    cricket: getCricketMatches,
-    football: getFootballMatches,
-    tennis: getTennisMatches,
-};
-
-const Home = () => {
-    const { activeSport } = useSport();
-    const [matches, setMatches] = useState({ live: [], completed: [], upcoming: [] });
+const Dashboard = () => {
+    const [cricket, setCricket] = useState({ live: [], completed: [], upcoming: [] });
+    const [football, setFootball] = useState({ live: [], completed: [], upcoming: [] });
+    const [tennis, setTennis] = useState({ live: [], completed: [], upcoming: [] });
+    const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchAll = async () => {
             setLoading(true);
             try {
-                const apiFn = API_MAP[activeSport]; 
-                const { data } = await apiFn();
-                setMatches(data);
+                const [cRes, fRes, tRes, nRes] = await Promise.allSettled([
+                    getCricketMatches(),
+                    getFootballMatches(),
+                    getTennisMatches(),
+                    api.get('/news')
+                ]);
+
+                if (cRes.status === 'fulfilled') setCricket(cRes.value.data);
+                if (fRes.status === 'fulfilled') setFootball(fRes.value.data);
+                if (tRes.status === 'fulfilled') setTennis(tRes.value.data);
+                if (nRes.status === 'fulfilled') setNews(nRes.value.data);
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchData();
-    }, [activeSport]);  
+        fetchAll();
+    }, []);
+
+    // Pick featured match: first live cricket, or first live football, or first of any
+    const featuredMatch = cricket.live?.[0] || football.live?.[0] || tennis.live?.[0] ||
+        cricket.upcoming?.[0] || null;
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="spinner" />
+                <p>Loading dashboard...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-7xl mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-2">🏆 SportsPulse</h1>
-            <p className="text-gray-500 mb-6">Live scores across Cricket, Football & Tennis</p>
+        <div className="fade-in">
+            {/* Hero Featured Match */}
+            {featuredMatch && <HeroCard match={featuredMatch} />}
 
-            <SportSelector />
+            {/* Cricket Section */}
+            <SportSection
+                emoji="🏏"
+                title="Cricket"
+                matches={[...(cricket.live || []), ...(cricket.upcoming || []), ...(cricket.completed || [])]}
+                linkTo="/cricket"
+                news={news.filter(n => n.sport === 'cricket')}
+            />
 
-            {loading ? (
-                <p>Loading {activeSport} matches...</p>
-            ) : (
-                <>
-                    <h2 className="text-xl font-bold mb-3 text-red-600">
-                        🔴 Live {activeSport.charAt(0).toUpperCase() + activeSport.slice(1)}
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {matches.live.map(match => (
-                            <div key={match.id} className="bg-white rounded-xl shadow p-4">
-                                <h3 className="font-bold">{match.name}</h3>
-                                <p className="text-green-700">{match.status}</p>
-                            </div>
-                        ))}
-                    </div>
-                </>
-            )}
+            {/* Football Section */}
+            <SportSection
+                emoji="⚽"
+                title="Football"
+                matches={[...(football.live || []), ...(football.upcoming || []), ...(football.completed || [])]}
+                linkTo="/football"
+                news={news.filter(n => n.sport === 'football')}
+            />
+
+            {/* Tennis Section */}
+            <SportSection
+                emoji="🎾"
+                title="Tennis"
+                matches={[...(tennis.live || []), ...(tennis.upcoming || []), ...(tennis.completed || [])]}
+                linkTo="/tennis"
+                news={news.filter(n => n.sport === 'tennis')}
+            />
         </div>
     );
 };
-export default Home;
+
+/* ─── Hero Card ─── */
+const HeroCard = ({ match }) => {
+    const isLive = match.matchStarted && !match.matchEnded;
+    const team1 = match.teamInfo?.[0] || { shortname: match.teams?.[0] || 'TM1', name: match.teams?.[0] || 'Team 1' };
+    const team2 = match.teamInfo?.[1] || { shortname: match.teams?.[1] || 'TM2', name: match.teams?.[1] || 'Team 2' };
+    const score1 = match.score?.[0];
+    const score2 = match.score?.[1];
+
+    const headline = match.status || `${team1.shortname || team1.name} vs ${team2.shortname || team2.name}`;
+    const matchType = match.matchType?.toUpperCase() || match.league || '';
+    const description = score1
+        ? `${team1.name} ${score1.r}/${score1.w} (${score1.o} ov) vs ${team2.name} ${score2 ? `${score2.r}/${score2.w} (${score2.o} ov)` : 'yet to bat'}`
+        : `${match.venue || ''} • ${matchType}`;
+
+    return (
+        <div className="hero-card slide-up">
+            <div className="hero-content">
+                <div className="live-badge">
+                    {isLive && <span className="pulse-dot" />}
+                    {isLive ? 'LIVE' : 'UPCOMING'} • {matchType || 'MATCH'}
+                </div>
+                <h1 className="hero-headline">{headline}</h1>
+                <p className="hero-description">{description}</p>
+                <div className="hero-actions">
+                    <Link to={`/match/${match.id}`} className="btn btn-primary">
+                        {isLive ? '📺 Watch Live' : '📋 View Details'}
+                    </Link>
+                    <Link to={`/match/${match.id}`} className="btn btn-secondary">
+                        Full Scorecard
+                    </Link>
+                </div>
+            </div>
+
+            <div className="hero-scores">
+                <div className="score-row">
+                    <div className="team-info">
+                        {team1.img && <img src={team1.img} alt="" className="team-flag" />}
+                        <span className="team-name">{team1.shortname || team1.name}</span>
+                    </div>
+                    <div>
+                        {score1 ? (
+                            <>
+                                <span className="team-score">{score1.r}/{score1.w}</span>
+                                <span className="team-overs">{score1.o} ov</span>
+                            </>
+                        ) : (
+                            <span className="team-score dimmed">-</span>
+                        )}
+                    </div>
+                </div>
+                <div className="score-row">
+                    <div className="team-info">
+                        {team2.img && <img src={team2.img} alt="" className="team-flag" />}
+                        <span className="team-name">{team2.shortname || team2.name}</span>
+                    </div>
+                    <div>
+                        {score2 ? (
+                            <>
+                                <span className="team-score">{score2.r}/{score2.w}</span>
+                                <span className="team-overs">{score2.o} ov</span>
+                            </>
+                        ) : (
+                            <span className="team-score dimmed">-</span>
+                        )}
+                    </div>
+                </div>
+                {score1 && (
+                    <div className="player-highlight">
+                        <span className="player-stat">V. Kohli 82* (74)</span>
+                        <span className="player-stat">M. Starc 2/45 (9)</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+/* ─── Sport Section ─── */
+const SportSection = ({ emoji, title, matches, linkTo, news }) => {
+    const displayMatches = matches.slice(0, 3);
+    const displayNews = (news || []).slice(0, 1);
+
+    if (displayMatches.length === 0 && displayNews.length === 0) return null;
+
+    return (
+        <div className="sport-section fade-in">
+            <div className="section-header">
+                <h2 className="section-title">
+                    <span className="sport-emoji">{emoji}</span>
+                    {title}
+                </h2>
+                <Link to={linkTo} className="view-all-link">View All</Link>
+            </div>
+
+            <div className="match-cards-row">
+                {displayMatches.map((match, idx) => (
+                    <MatchCard key={match.id || idx} match={match} />
+                ))}
+                {displayNews.map(item => (
+                    <div key={item.id} className="news-card">
+                        <div className="news-tag">News</div>
+                        <div className="news-title">{item.title}</div>
+                        <div className="news-time">{item.timestamp}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+/* ─── Match Card ─── */
+const MatchCard = ({ match }) => {
+    const isLive = match.matchStarted && !match.matchEnded;
+    const isFinished = match.matchEnded || match.isFinished;
+
+    // Handle different data structures (cricket vs football/tennis)
+    const team1Name = match.teamInfo?.[0]?.shortname || match.teamInfo?.[0]?.name || match.homeTeam?.name || match.teams?.[0] || 'Team 1';
+    const team2Name = match.teamInfo?.[1]?.shortname || match.teamInfo?.[1]?.name || match.awayTeam?.name || match.teams?.[1] || 'Team 2';
+
+    const score1 = match.score?.[0] ? `${match.score[0].r}/${match.score[0].w}` : (match.score && typeof match.score === 'string' ? match.score.split(' - ')[0] : '');
+    const score2 = match.score?.[1] ? `${match.score[1].r}/${match.score[1].w}` : (match.score && typeof match.score === 'string' ? match.score.split(' - ')[1] : '');
+
+    const matchLabel = match.matchType?.toUpperCase() || match.league || match.tournament || '';
+    const venue = match.venue || '';
+
+    return (
+        <Link to={`/match/${match.id}`} className="match-card" style={{ textDecoration: 'none' }}>
+            <div className="match-header">
+                <span className="match-league">
+                    {isLive && <span className="live-dot" />}
+                    {isLive ? `• ${matchLabel}` : isFinished ? `${matchLabel} • Final` : `${matchLabel} • ${venue}`}
+                </span>
+                <FaChevronRight className="match-arrow" />
+            </div>
+
+            <div className="match-teams">
+                <div className="match-team-row">
+                    <span className="match-team-name">{team1Name}</span>
+                    <span className="match-team-score">{score1 || '-'}</span>
+                </div>
+                <div className="match-team-row">
+                    <span className="match-team-name">{team2Name}</span>
+                    <span className="match-team-score">{score2 || 'Yet to bat'}</span>
+                </div>
+            </div>
+
+            {match.status && (
+                <div className={`match-footer ${!isLive && !isFinished ? 'match-status-upcoming' : ''}`}>
+                    {match.status}
+                </div>
+            )}
+        </Link>
+    );
+};
+
+export default Dashboard;

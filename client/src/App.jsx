@@ -19,6 +19,8 @@ import CricketPage from './pages/CricketPage';
 import FootballPage from './pages/FootballPage';
 import TennisPage from './pages/TennisPage';
 import TeamComparison from './pages/TeamComparison';
+import SearchResults from './pages/SearchResults';
+import SeriesStats from './pages/SeriesStats';
 
 function App() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,7 +51,9 @@ function App() {
                                     <Route path="/cricket" element={<CricketPage />} />
                                     <Route path="/football" element={<FootballPage />} />
                                     <Route path="/tennis" element={<TennisPage />} />
+                                    <Route path="/series/:sport/stats" element={<SeriesStats />} />
                                     <Route path="/compare" element={<TeamComparison />} />
+                                    <Route path="/search" element={<SearchResults />} />
                                 </Routes>
                             </main>
                         </div>

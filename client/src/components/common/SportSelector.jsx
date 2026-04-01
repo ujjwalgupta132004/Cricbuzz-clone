@@ -4,16 +4,12 @@ const SportSelector = () => {
     const { activeSport, setActiveSport, sports } = useSport();
 
     return (
-        <div className="flex gap-3 mb-6">
+        <div className="sport-tabs">
             {sports.map(sport => (
                 <button
                     key={sport.key}
                     onClick={() => setActiveSport(sport.key)}
-                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all
-            ${activeSport === sport.key
-                            ? `bg-${sport.color}-600 text-white shadow-lg scale-105`
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                        }`}
+                    className={`sport-tab ${activeSport === sport.key ? `active-${sport.key}` : ''}`}
                 >
                     {sport.label}
                 </button>
@@ -21,4 +17,5 @@ const SportSelector = () => {
         </div>
     );
 };
+
 export default SportSelector;
