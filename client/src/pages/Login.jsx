@@ -21,25 +21,37 @@ const Login = () => {
     };
 
     return (
-        <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-            {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <input type="email" placeholder="Email" value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-                <input type="password" placeholder="Password" value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
-                <button type="submit"
-                    className="bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 transition font-semibold">
-                    Login
-                </button>
-            </form>
-            <p className="text-center mt-4 text-sm">
-                Don't have an account? <Link to="/register" className="text-green-700 font-semibold">Register</Link>
-            </p>
+        <div className="auth-container fade-in">
+            <div className="auth-card">
+                <h2 className="auth-title">Welcome Back</h2>
+                <p className="auth-subtitle">Sign in to your SportsBuzz account</p>
+
+                {error && <p className="form-error">{error}</p>}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label className="form-label">Email</label>
+                        <input type="email" placeholder="you@example.com" value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="form-input" required />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Password</label>
+                        <input type="password" placeholder="••••••••" value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="form-input" required />
+                    </div>
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 8 }}>
+                        Sign In
+                    </button>
+                </form>
+
+                <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-muted)' }}>
+                    Don't have an account? <Link to="/register" className="auth-link">Register</Link>
+                </p>
+            </div>
         </div>
     );
 };
+
 export default Login;

@@ -118,7 +118,7 @@ const MatchDetail = () => {
             </div>
 
             {activeTab === 'scorecard' && <ScorecardTab match={match} sport={sport} />}
-            {activeTab === 'squads' && <SquadsTab sport={sport} />}
+            {activeTab === 'squads' && <SquadsTab sport={sport} matchId={id} />}
             {activeTab === 'commentary' && <CommentaryTab commentary={commentary} loading={loadingCommentary} />}
             {activeTab === 'stats' && <StatsTab match={match} sport={sport} />}
             {activeTab === 'prediction' && (
@@ -222,11 +222,13 @@ const SquadsTab = ({ sport }) => {
     const [squadData, setSquadData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const { id } = useParams();
+
     useEffect(() => {
         const fetchSquads = async () => {
             setLoading(true);
             try {
-                const { data } = await api.get(`/search/squads/${sport}`);
+                const { data } = await api.get(`/search/squads/${sport}?matchId=${id}`);
                 setSquadData(data);
             } catch (err) {
                 console.error('Failed to load squads', err);

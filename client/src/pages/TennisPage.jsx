@@ -1,0 +1,66 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getTennisMatches } from '../services/api';
+import { FaChevronRight } from 'react-icons/fa';
+
+const TennisPage = () => {
+    const [matches, setMatches] = useState({ live: [], completed: [], upcoming: [] });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const { data } = await getTennisMatches();
+                setMatches(data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    if (loading) return (
+        <div className="loading-container"><div className="spinner" /><p>Loading tennis...</p></div>
+    );
+
+    const allMatches = [...(matches.live || []), ...(matches.upcoming || []), ...(matches.completed || [])];
+
+    return (
+        <div className="fade-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h1 style={{ fontSize: 24, fontWeight: 700 }}>🎾 Tennis</h1>
+                <Link to="/series/tennis/stats" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+                    View Tournament Stats
+                </Link>
+            </div>
+            <div className="match-cards-row">
+                {allMatches.map((m, i) => (
+                    <Link key={m.id || i} to={`/match/${m.id}`} className="match-card" style={{ textDecoration: 'none' }}>
+                        <div className="match-header">
+                            <span className="match-league">
+                                {m.isLive && <span className="live-dot" />}
+                                {m.tournament || 'Tennis'} {m.round && `• ${m.round}`}
+                            </span>
+                            <FaChevronRight className="match-arrow" />
+                        </div>
+                        <div className="match-teams">
+                            <div className="match-team-row">
+                                <span className="match-team-name">{m.name?.split(' vs ')?.[0] || 'Player 1'}</span>
+                                <span className="match-team-score">{m.score?.split(', ')?.[0] || '-'}</span>
+                            </div>
+                            <div className="match-team-row">
+                                <span className="match-team-name">{m.name?.split(' vs ')?.[1] || 'Player 2'}</span>
+                                <span className="match-team-score">{m.score?.split(', ')?.[1] || '-'}</span>
+                            </div>
+                        </div>
+                        {m.status && <div className="match-footer">{m.status}</div>}
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default TennisPage;

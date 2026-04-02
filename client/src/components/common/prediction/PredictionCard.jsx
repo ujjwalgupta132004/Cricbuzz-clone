@@ -4,14 +4,17 @@ import api from '../../../services/api';
 const PredictionCard = ({ sport, matchId, matchName }) => {
     const [prediction, setPrediction] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     const fetchPrediction = async () => {
         setLoading(true);
+        setErrorMsg(null);
         try {
             const { data } = await api.post(`/predictions/${sport}/${matchId}`);
             setPrediction(data.prediction);
         } catch (err) {
             console.error(err);
+            setErrorMsg(err.response?.data?.error || 'Failed to fetch prediction.');
         } finally {
             setLoading(false);
         }
@@ -21,6 +24,12 @@ const PredictionCard = ({ sport, matchId, matchName }) => {
         <div className="card">
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>🤖 AI Match Prediction</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{matchName}</p>
+
+            {errorMsg && (
+                <div style={{ padding: 12, backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 16, color: '#dc2626', fontSize: 13, fontWeight: 500 }}>
+                    ⚠️ {errorMsg.includes('API key') ? 'Your Google Gemini API Key is invalid or expired. Please update it in your backend .env file.' : errorMsg}
+                </div>
+            )}
 
             {!prediction ? (
                 <button onClick={fetchPrediction} disabled={loading} className="btn btn-primary">
