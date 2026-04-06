@@ -2,28 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSport } from '../context/SportsContext';
 import SportSelector from '../components/common/SportSelector';
 import api from '../services/api';
-import { Radar, Doughnut } from 'react-chartjs-2';
-
-const compareOptions = {
-    cricket: [
-        { id: 'c_t_ind', name: 'India', type: 'Team' },
-        { id: 'c_t_aus', name: 'Australia', type: 'Team' },
-        { id: 'c_p_vk', name: 'Virat Kohli', type: 'Player' },
-        { id: 'c_p_jb', name: 'Jasprit Bumrah', type: 'Player' }
-    ],
-    football: [
-        { id: 'f_t_mun', name: 'Man Utd', type: 'Team' },
-        { id: 'f_t_liv', name: 'Liverpool', type: 'Team' },
-        { id: 'f_p_lm', name: 'Lionel Messi', type: 'Player' },
-        { id: 'f_p_cr', name: 'C. Ronaldo', type: 'Player' }
-    ],
-    tennis: [
-        { id: 't_p_ca', name: 'Carlos Alcaraz', type: 'Player' },
-        { id: 't_p_js', name: 'Jannik Sinner', type: 'Player' },
-        { id: 't_p_nd', name: 'Novak Djokovic', type: 'Player' },
-        { id: 't_p_rn', name: 'Rafael Nadal', type: 'Player' }
-    ]
-};
+import { Radar } from 'react-chartjs-2';
 
 const TeamComparison = () => {
     const { activeSport } = useSport();
@@ -31,24 +10,26 @@ const TeamComparison = () => {
     const [entity1, setEntity1] = useState('');
     const [entity2, setEntity2] = useState('');
     const [comparisonData, setComparisonData] = useState(null);
-
-    const options = compareOptions[activeSport] || [];
+    const [error, setError] = useState('');
 
     useEffect(() => {
         setEntity1('');
         setEntity2('');
         setComparisonData(null);
+        setError('');
     }, [activeSport]);
 
     const handleCompare = async () => {
         if (!entity1 || !entity2) return;
         setLoading(true);
+        setError('');
         try {
-            // Passing the IDs exactly. If they mix player vs team, our backend must handle it.
             const res = await api.get(`/compare/${activeSport}?e1=${entity1}&e2=${entity2}`);
             setComparisonData(res.data);
         } catch (err) {
             console.error(err);
+            setComparisonData(null);
+            setError(err.response?.data?.message || 'Unable to compare these entities right now.');
         } finally {
             setLoading(false);
         }
@@ -77,6 +58,7 @@ const TeamComparison = () => {
                         {loading ? 'Comparing...' : 'Compare Insights'}
                     </button>
                 </div>
+                {error && <p style={{ color: '#f87171', marginTop: 12, fontSize: 13 }}>{error}</p>}
             </div>
 
             {comparisonData && (
@@ -87,7 +69,7 @@ const TeamComparison = () => {
 };
 
 const ComparisonResults = ({ data, activeSport }) => {
-    const { e1, e2, h2h } = data;
+    const { e1, e2, h2h, summary } = data;
 
     if (!e1 || !e2) return null;
 
@@ -116,6 +98,11 @@ const ComparisonResults = ({ data, activeSport }) => {
                             Direct Matchups: <strong>{h2h.total}</strong> •{' '}
                             <span style={{ color: 'var(--accent-green)' }}>{e1.name} won {h2h.e1Wins}</span> •{' '}
                             <span style={{ color: 'var(--accent-blue)' }}>{e2.name} won {h2h.e2Wins}</span>
+                        </p>
+                    )}
+                    {summary && (
+                        <p style={{ color: 'var(--text-secondary)', marginTop: 12, fontSize: 14 }}>
+                            {summary}
                         </p>
                     )}
                 </div>
@@ -182,6 +169,10 @@ const EntitySearch = ({ activeSport, value, onSelect, placeholder }) => {
     const wrapperRef = useRef(null);
 
     useEffect(() => {
+        setQuery(value || '');
+    }, [value]);
+
+    useEffect(() => {
         const handleClickOutside = (e) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setShowDropdown(false);
         };
@@ -198,8 +189,7 @@ const EntitySearch = ({ activeSport, value, onSelect, placeholder }) => {
 
         try {
             const res = await api.get(`/search?q=${val}`);
-            // Filter by active sport so we only pair same-sport entities
-            const filtered = res.data.filter(i => i.sport === activeSport);
+            const filtered = res.data.filter(i => i.sport === activeSport && (i.type === 'Player' || i.type === 'Team'));
             setResults(filtered);
             setShowDropdown(true);
         } catch {

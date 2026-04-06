@@ -7,13 +7,24 @@ const Standings = () => {
     const { activeSport } = useSport();
     const [standings, setStandings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [competition, setCompetition] = useState('');
+    const [competitions, setCompetitions] = useState([]);
+    const [title, setTitle] = useState('');
+    const [meta, setMeta] = useState({ source: 'mock', updatedAt: null });
 
     useEffect(() => {
         const fetchStandings = async () => {
             setLoading(true);
             try {
-                const { data } = await api.get(`/standings/${activeSport}`);
-                setStandings(Array.isArray(data) ? data : []);
+                const query = competition ? `?competition=${competition}` : '';
+                const { data } = await api.get(`/standings/${activeSport}${query}`);
+                setStandings(Array.isArray(data.table) ? data.table : []);
+                setCompetitions(data.competitions || []);
+                setTitle(data.label || '');
+                setMeta({ source: data.source, updatedAt: data.updatedAt });
+                if (!competition && data.competition) {
+                    setCompetition(data.competition);
+                }
             } catch (err) {
                 console.error(err);
                 setStandings([]);
@@ -21,8 +32,9 @@ const Standings = () => {
                 setLoading(false);
             }
         };
+
         fetchStandings();
-    }, [activeSport]);
+    }, [activeSport, competition]);
 
     const renderCricketTable = () => (
         <table className="standings-table">
@@ -114,9 +126,28 @@ const Standings = () => {
     return (
         <div className="fade-in">
             <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 20 }}>
-                📊 {activeSport === 'cricket' ? 'IPL Table 2026' : activeSport === 'football' ? 'Premier League Table 2025/26' : 'ATP Rankings (Live)'}
+                📊 {title || (activeSport === 'cricket' ? 'Cricket Standings' : activeSport === 'football' ? 'Football Standings' : 'Tennis Rankings')}
             </h1>
             <SportSelector />
+            <div className="card" style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {competitions.map((item) => (
+                            <button
+                                key={item.id}
+                                className={`sport-tab ${competition === item.id ? 'active-cricket' : ''}`}
+                                onClick={() => setCompetition(item.id)}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {meta.source === 'api-football' ? 'Live standings' : 'Fallback standings'}
+                        {meta.updatedAt ? ` • ${new Date(meta.updatedAt).toLocaleString()}` : ''}
+                    </div>
+                </div>
+            </div>
 
             {loading ? (
                 <div className="loading-container"><div className="spinner" /></div>
