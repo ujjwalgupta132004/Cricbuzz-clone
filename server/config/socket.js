@@ -27,8 +27,19 @@ const initSocket = (httpServer) => {
             socket.join(`sport_${sport}`);
         });
 
-        socket.on('disconnect', () => {
-            console.log(`❌ Disconnected: ${socket.id}`);
+        socket.on('disconnect', (reason) => {
+            if (reason === 'client namespace disconnect') {
+                console.log(`ℹ️ Client closed socket: ${socket.id}`);
+                return;
+            }
+
+            console.warn(`❌ Disconnected: ${socket.id} | Reason: ${reason}`);
+        });
+
+        socket.on('disconnecting', (reason) => {
+            const rooms = [...socket.rooms].filter((room) => room !== socket.id);
+            const log = reason === 'client namespace disconnect' ? console.log : console.warn;
+            log(`⚠️ Disconnecting: ${socket.id} | Reason: ${reason} | Rooms: ${rooms.join(', ') || 'none'}`);
         });
     });
 

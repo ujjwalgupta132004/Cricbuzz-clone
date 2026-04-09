@@ -6,7 +6,8 @@ const BASE_URL = process.env.CRICKET_API_BASE_URL;
 const apiRequest = async (endpoint, params = {}) => {
     try {
         const response = await axios.get(`${BASE_URL}/${endpoint}`, {
-            params: { apikey: API_KEY, ...params }
+            params: { apikey: API_KEY, ...params },
+            proxy: false,
         });
 
         if (response.data.status !== 'success') {
@@ -24,7 +25,7 @@ const getCurrentMatches = async () => {
     return await apiRequest('currentMatches', { offset: 0 });
 };
 const getMatchInfo = async (matchId) => {
-    return await apiRequest('match_info', { id: matchId });
+    return await apiRequest('match_scorecard', { id: matchId });
 };
 const getPlayerInfo = async (playerId) => {
     return await apiRequest('players_info', { id: playerId });
