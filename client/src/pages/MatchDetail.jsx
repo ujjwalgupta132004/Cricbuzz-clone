@@ -2,6 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import PredictionCard from '../components/common/prediction/PredictionCard';
+import { getCricketMatchDetails, getFootballMatchDetails, getTennisMatchDetails } from '../services/api';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -29,8 +30,6 @@ const MatchDetail = () => {
     const [match, setMatch] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('scorecard');
-    const [commentary, setCommentary] = useState([]);
-    const [loadingCommentary, setLoadingCommentary] = useState(false);
 
     useEffect(() => {
         const fetchMatch = async () => {
@@ -41,23 +40,14 @@ const MatchDetail = () => {
                 if (id.startsWith('mock_f')) sport = 'football';
                 else if (id.startsWith('mock_t')) sport = 'tennis';
                 else if (id.startsWith('mock_c')) sport = 'cricket';
-
-                const endpoint = sport === 'cricket'
-                    ? `/cricket/matches/${id}`
+                const request = sport === 'cricket'
+                    ? getCricketMatchDetails(id)
                     : sport === 'football'
-                        ? `/football/matches`
-                        : `/tennis/matches`;
+                        ? getFootballMatchDetails(id)
+                        : getTennisMatchDetails(id);
 
-                const { data } = await api.get(endpoint);
-
-                if (sport === 'cricket') {
-                    setMatch({ ...data, _sport: 'cricket' });
-                } else {
-                    // Football/Tennis: find the match from the list
-                    const allMatches = [...(data.live || []), ...(data.completed || []), ...(data.upcoming || [])];
-                    const found = allMatches.find(m => m.id === id) || allMatches[0];
-                    setMatch({ ...found, _sport: sport });
-                }
+                const { data } = await request;
+                setMatch({ ...data, _sport: sport });
             } catch (err) {
                 console.error(err);
             } finally {
@@ -67,27 +57,6 @@ const MatchDetail = () => {
         if (id) fetchMatch();
     }, [id, sportParam]);
 
-    const fetchCommentary = async () => {
-        if (commentary.length > 0) return;
-        setLoadingCommentary(true);
-        try {
-            const { data } = await api.post('/ai/commentary', {
-                matchData: match,
-                sport: match?._sport || 'cricket',
-                lastEvent: match?.status
-            });
-            setCommentary([
-                { time: 'Now', text: data.commentary, isKey: true },
-                { time: '2m ago', text: 'The atmosphere is electric at the venue!', isKey: false },
-            ]);
-        } catch {
-            setCommentary([
-                { time: 'Now', text: 'Commentary will appear here during live matches.', isKey: false }
-            ]);
-        } finally {
-            setLoadingCommentary(false);
-        }
-    };
 
     if (loading) return <div className="loading-container"><div className="spinner" /><p>Loading match...</p></div>;
     if (!match) return <div className="empty-state"><div className="empty-icon">🏟️</div><p>Match not found</p></div>;
@@ -97,7 +66,6 @@ const MatchDetail = () => {
     const tabs = [
         { key: 'scorecard', label: '📊 Scorecard' },
         { key: 'squads', label: '👥 Squads' },
-        { key: 'commentary', label: '🎙️ Commentary' },
         { key: 'stats', label: '📈 Stats' },
         { key: 'prediction', label: '🤖 AI Prediction' },
     ];
@@ -111,7 +79,7 @@ const MatchDetail = () => {
                 {tabs.map(tab => (
                     <button key={tab.key}
                         className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-                        onClick={() => { setActiveTab(tab.key); if (tab.key === 'commentary') fetchCommentary(); }}>
+                        onClick={() => { setActiveTab(tab.key); }}>
                         {tab.label}
                     </button>
                 ))}
@@ -119,7 +87,6 @@ const MatchDetail = () => {
 
             {activeTab === 'scorecard' && <ScorecardTab match={match} sport={sport} />}
             {activeTab === 'squads' && <SquadsTab sport={sport} matchId={id} />}
-            {activeTab === 'commentary' && <CommentaryTab commentary={commentary} loading={loadingCommentary} />}
             {activeTab === 'stats' && <StatsTab match={match} sport={sport} />}
             {activeTab === 'prediction' && (
                 <PredictionCard sport={sport} matchId={match.id} matchName={match.name} />
@@ -133,13 +100,14 @@ const MatchDetail = () => {
    ═══════════════════════════ */
 const MatchHeader = ({ match, sport }) => {
     const isLive = (match.matchStarted && !match.matchEnded) || match.isLive;
+    const isCompleted = match.matchEnded || match.isFinished;
 
     return (
         <div className="hero-card" style={{ marginBottom: 20 }}>
             <div className="hero-content">
                 <div className="live-badge">
                     {isLive && <span className="pulse-dot" />}
-                    {isLive ? 'LIVE' : match.matchEnded || match.isFinished ? 'COMPLETED' : 'UPCOMING'}
+                    {isLive ? 'LIVE' : isCompleted ? 'COMPLETED' : 'UPCOMING'}
                     {' • '}
                     {sport === 'cricket' ? match.matchType?.toUpperCase() : sport === 'football' ? match.league : match.tournament}
                 </div>
@@ -242,7 +210,7 @@ const SquadsTab = ({ sport }) => {
     if (loading) return <div className="loading-container"><div className="spinner" /><p>Loading squads...</p></div>;
     if (!squadData || !squadData.team1) return <div className="empty-state"><p>Squad information unavailable.</p></div>;
 
-    const { team1Name, team2Name, team1, team2 } = squadData;
+    const { team1Name, team2Name, team1, team2, source } = squadData;
 
     return (
         <div className="fade-in mt-4">
@@ -259,7 +227,9 @@ const SquadsTab = ({ sport }) => {
                     </div>
                 </div>
 
-                <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 20, fontWeight: 800, color: 'var(--text-secondary)' }}>Squad</div>
+                <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 20, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                    {source === 'live-derived' ? 'Live Playing Data' : source === 'live-lineups' ? 'Official Lineups' : 'Squad'}
+                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1px', backgroundColor: 'var(--border-color)' }}>
                     {Array.from({ length: Math.max(team1.length, team2.length) }).map((_, i) => (
@@ -334,13 +304,13 @@ const ScorecardTab = ({ match, sport }) => (
                             {inning.batting?.map((batter, i) => (
                                 <tr key={`bat-${i}`}>
                                     <td>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{batter.name}</div>
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{batter.dismissal}</div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{batter.name || batter.batsman?.name}</div>
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{batter.dismissal || batter['dismissal-text']}</div>
                                     </td>
                                     <td style={{ fontWeight: 700 }}>{batter.r}</td>
                                     <td>{batter.b}</td>
-                                    <td>{batter['4']}</td>
-                                    <td>{batter['6']}</td>
+                                    <td>{batter['4s'] || batter['4']}</td>
+                                    <td>{batter['6s'] || batter['6']}</td>
                                     <td style={{ textAlign: 'right' }}>{batter.sr}</td>
                                 </tr>
                             ))}
@@ -361,12 +331,12 @@ const ScorecardTab = ({ match, sport }) => (
                         <tbody>
                             {inning.bowling?.map((bowler, i) => (
                                 <tr key={`bowl-${i}`}>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{bowler.name}</td>
-                                    <td>{bowler.o}</td>
-                                    <td>{bowler.m}</td>
-                                    <td>{bowler.r}</td>
-                                    <td style={{ fontWeight: 700 }}>{bowler.w}</td>
-                                    <td style={{ textAlign: 'right' }}>{bowler.eco}</td>
+                                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{bowler.name || bowler.bowler?.name}</td>
+                                    <td>{bowler.o ?? bowler.overs ?? '-'}</td>
+                                    <td>{bowler.m ?? bowler.maidens ?? '-'}</td>
+                                    <td>{bowler.r ?? bowler.runs ?? bowler.runsConceded ?? '-'}</td>
+                                    <td style={{ fontWeight: 700 }}>{bowler.w ?? bowler.wickets ?? '-'}</td>
+                                    <td style={{ textAlign: 'right' }}>{bowler.eco ?? bowler.economy ?? '-'}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -391,17 +361,7 @@ const ScorecardTab = ({ match, sport }) => (
                         <tr><th>Stat</th><th style={{ textAlign: 'center' }}>{match.homeTeam?.name}</th><th style={{ textAlign: 'center' }}>{match.awayTeam?.name}</th></tr>
                     </thead>
                     <tbody>
-                        {[
-                            ['Score', match.score?.split(' - ')?.[0] || '-', match.score?.split(' - ')?.[1] || '-'],
-                            ['Possession', '52%', '48%'],
-                            ['Shots', '14', '11'],
-                            ['Shots on Target', '6', '4'],
-                            ['Corners', '7', '5'],
-                            ['Fouls', '12', '14'],
-                            ['Yellow Cards', '2', '3'],
-                            ['Passes', '456', '398'],
-                            ['Pass Accuracy', '87%', '82%'],
-                        ].map(([stat, h, a], i) => (
+                        {getFootballStatRows(match).map(([stat, h, a], i) => (
                             <tr key={i}>
                                 <td style={{ fontWeight: 500 }}>{stat}</td>
                                 <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent-green)' }}>{h}</td>
@@ -459,6 +419,30 @@ const ScorecardTab = ({ match, sport }) => (
     </div>
 );
 
+const getFootballStatRows = (match) => {
+    const scoreParts = match.score?.split(' - ') || ['-', '-'];
+    const stats = Array.isArray(match.statistics) ? match.statistics : [];
+    const homeStats = stats[0]?.statistics || [];
+    const awayStats = stats[1]?.statistics || [];
+
+    const statMap = new Map();
+    homeStats.forEach((entry) => statMap.set(entry.type, [entry.value ?? '-', '-']));
+    awayStats.forEach((entry) => {
+        const current = statMap.get(entry.type) || ['-', '-'];
+        current[1] = entry.value ?? '-';
+        statMap.set(entry.type, current);
+    });
+
+    const rows = [['Score', scoreParts[0] || '-', scoreParts[1] || '-']];
+    statMap.forEach((value, key) => rows.push([key, value[0], value[1]]));
+
+    return rows.length > 1 ? rows : [
+        ['Score', scoreParts[0] || '-', scoreParts[1] || '-'],
+        ['Possession', '52%', '48%'],
+        ['Shots', '14', '11'],
+    ];
+};
+
 const InfoRow = ({ label, value }) => (
     <div style={{ padding: '8px 0' }}>
         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{label}</span>
@@ -466,24 +450,6 @@ const InfoRow = ({ label, value }) => (
     </div>
 );
 
-/* ═══════════════════════════
-   Commentary Tab
-   ═══════════════════════════ */
-const CommentaryTab = ({ commentary, loading }) => {
-    if (loading) return <div className="loading-container"><div className="spinner" /><p>Generating commentary...</p></div>;
-    return (
-        <div>
-            {commentary.map((item, idx) => (
-                <div key={idx} className="card" style={{ marginBottom: 8, borderLeft: item.isKey ? '3px solid var(--accent-green)' : 'none' }}>
-                    <div style={{ display: 'flex', gap: 12 }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 50 }}>{item.time}</span>
-                        <p style={{ fontSize: 14, color: item.isKey ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{item.text}</p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-};
 
 /* ═══════════════════════════
    Stats Tab — All Sports

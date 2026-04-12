@@ -37,7 +37,7 @@ const FootballPage = () => {
             </div>
             <div className="match-cards-row">
                 {allMatches.map((m, i) => (
-                    <Link key={m.id || i} to={`/match/${m.id}`} className="match-card" style={{ textDecoration: 'none' }}>
+                    <Link key={m.id || i} to={`/match/${m.id}?sport=football`} className="match-card" style={{ textDecoration: 'none' }}>
                         <div className="match-header">
                             <span className="match-league">
                                 {m.isLive && <span className="live-dot" />}

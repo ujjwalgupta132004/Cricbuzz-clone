@@ -59,7 +59,7 @@ const CricketPage = () => {
             {activeTab === 'matches' && (
                 <div className="match-cards-row">
                     {allMatches.map((m, i) => (
-                        <Link key={m.id || i} to={`/match/${m.id}`} className="match-card" style={{ textDecoration: 'none' }}>
+                        <Link key={m.id || i} to={`/match/${m.id}?sport=cricket`} className="match-card" style={{ textDecoration: 'none' }}>
                             <div className="match-header">
                                 <span className="match-league">
                                     {m.matchStarted && !m.matchEnded && <span className="live-dot" />}

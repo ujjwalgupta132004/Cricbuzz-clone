@@ -147,7 +147,7 @@ const LiveMatchCard = ({ match, sport }) => {
     }
 
     return (
-        <Link to={`/match/${match.id}`} className="match-card" style={{ textDecoration: 'none' }}>
+        <Link to={`/match/${match.id}?sport=${sport}`} className="match-card" style={{ textDecoration: 'none' }}>
             <div className="match-header">
                 <span className="match-league">
                     {isLive && <span className="live-dot" />}
